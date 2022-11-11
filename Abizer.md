@@ -142,7 +142,15 @@ winner ~ PST045214 + PST040210 + PST120214 + POP010210 + AGE135214 +
 > winner.glm <- glm(myform, data = train, family = binomial)
 Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 > 
-> train <- train %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.5,"Republican","Democrat"))
+> train <- train %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
+> 
+> test <- test %>% mutate(probs = predict(winner.glm, newdata = test, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
+> 
+> train %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"))
+# A tibble: 1 × 3
+  accuracy precision recall
+     <dbl>     <dbl>  <dbl>
+1    0.901     0.897  0.999
 > 
 > ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
 ```
