@@ -114,6 +114,7 @@ Day 17
 
 ``` r
 > train <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/train.csv")
+> test <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/test_No_Y.csv")
 ```
 
 ``` r
@@ -141,7 +142,7 @@ winner ~ PST045214 + PST040210 + PST120214 + POP010210 + AGE135214 +
 > winner.glm <- glm(myform, data = train, family = binomial)
 Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 > 
-> train <- train %>% mutate(probs = predict(winner.glm, type = "response"))
+> train <- train %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.5,"Republican","Democrat"))
 > 
 > ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
 ```
@@ -154,7 +155,7 @@ Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 > perf_df1 <- data_frame(fpr=unlist(perf_obj1@x.values),
 +                        tpr= unlist(perf_obj1@y.values),
 +                        threshold=unlist(perf_obj1@alpha.values), 
-+                        model="GLM1")
++                        model="train")
 Warning: `data_frame()` was deprecated in tibble 1.1.0.
 Please use `tibble()` instead.
 This warning is displayed once every 8 hours.
