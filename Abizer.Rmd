@@ -30,7 +30,7 @@ train <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/train.c
 
 
 ```{r}
-train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democratic", Rep = "Republican"))
+train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican"))
 ```
 
 ```{r}
@@ -41,7 +41,19 @@ myform
 
 ```{r}
 winner.glm <- glm(myform, data = train, family = binomial)
-summary(winner.glm)
+
+train <- train %>% mutate(probs = predict(winner.glm, type = "response"))
+
+ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
+```
+
+```{r}
+preds_obj1 <- prediction(train$probs, train$winner, label.ordering=c("Democrat","Republican"))
+perf_obj1 <- performance(preds_obj1, "tpr","fpr")
+perf_df1 <- data_frame(fpr=unlist(perf_obj1@x.values),
+                       tpr= unlist(perf_obj1@y.values),
+                       threshold=unlist(perf_obj1@alpha.values), 
+                       model="GLM1")
 ```
 
 Significant variables = LND110210   0.014811 *, 

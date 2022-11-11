@@ -117,7 +117,7 @@ Day 17
 ```
 
 ``` r
-> train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democratic", Rep = "Republican"))
+> train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican"))
 ```
 
 ``` r
@@ -140,79 +140,25 @@ winner ~ PST045214 + PST040210 + PST120214 + POP010210 + AGE135214 +
 ``` r
 > winner.glm <- glm(myform, data = train, family = binomial)
 Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
-> summary(winner.glm)
+> 
+> train <- train %>% mutate(probs = predict(winner.glm, type = "response"))
+> 
+> ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
+```
 
-Call:
-glm(formula = myform, family = binomial, data = train)
+![](Abizer_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
-Deviance Residuals: 
-    Min       1Q   Median       3Q      Max  
--3.2052   0.0346   0.0788   0.2088   3.2891  
-
-Coefficients:
-              Estimate Std. Error z value Pr(>|z|)    
-(Intercept)  1.513e+01  1.383e+02   0.109 0.912861    
-PST045214   -2.543e-05  2.295e-05  -1.108 0.267880    
-PST040210   -1.031e-04  8.880e-04  -0.116 0.907591    
-PST120214    1.148e-01  4.323e-02   2.656 0.007898 ** 
-POP010210    1.294e-04  8.864e-04   0.146 0.883942    
-AGE135214   -1.809e-01  2.273e-01  -0.796 0.426018    
-AGE295214    2.964e-01  9.522e-02   3.113 0.001854 ** 
-AGE775214    2.371e-01  5.748e-02   4.124 3.72e-05 ***
-SEX255214   -8.858e-02  6.091e-02  -1.454 0.145877    
-RHI125214   -1.436e-01  1.388e+00  -0.103 0.917587    
-RHI225214   -1.176e-01  1.382e+00  -0.085 0.932149    
-RHI325214   -1.241e-01  1.381e+00  -0.090 0.928403    
-RHI425214   -1.486e-01  1.380e+00  -0.108 0.914288    
-RHI525214   -2.802e-01  1.476e+00  -0.190 0.849402    
-RHI625214   -6.328e-02  1.392e+00  -0.045 0.963727    
-RHI725214    7.897e-02  1.505e-01   0.525 0.599840    
-RHI825214    1.544e-01  1.650e-01   0.936 0.349357    
-POP715213   -1.193e-01  3.585e-02  -3.328 0.000874 ***
-POP645213    3.114e-02  4.757e-02   0.655 0.512715    
-POP815213   -9.393e-02  3.287e-02  -2.858 0.004269 ** 
-EDU635213   -1.246e-01  3.887e-02  -3.206 0.001348 ** 
-EDU685213   -1.071e-01  3.098e-02  -3.458 0.000545 ***
-VET605213    5.160e-05  3.486e-05   1.480 0.138767    
-LFE305213   -2.738e-02  3.154e-02  -0.868 0.385260    
-HSG010214    2.601e-05  1.887e-05   1.378 0.168065    
-HSG445213   -2.419e-02  2.905e-02  -0.833 0.404934    
-HSG096213   -5.629e-02  2.436e-02  -2.310 0.020870 *  
-HSG495213   -1.834e-05  3.266e-06  -5.617 1.95e-08 ***
-HSD410213   -5.104e-05  3.210e-05  -1.590 0.111860    
-HSD310213    3.255e+00  1.046e+00   3.111 0.001863 ** 
-INC910213    1.454e-04  7.198e-05   2.020 0.043344 *  
-INC110213    5.421e-05  3.439e-05   1.576 0.114962    
-PVY020213    1.909e-03  3.660e-02   0.052 0.958416    
-BZA010213    4.938e-05  2.444e-04   0.202 0.839907    
-BZA110213    6.572e-07  8.910e-06   0.074 0.941203    
-BZA115213   -6.175e-03  1.915e-02  -0.322 0.747132    
-NES010213    1.633e-04  9.637e-05   1.694 0.090196 .  
-SBO001207   -1.535e-04  1.170e-04  -1.312 0.189477    
-SBO315207   -1.695e-02  1.501e-02  -1.129 0.258870    
-SBO115207   -1.597e-02  3.592e-02  -0.445 0.656655    
-SBO215207   -5.215e-02  9.353e-02  -0.558 0.577119    
-SBO515207   -2.185e+00  2.905e+00  -0.752 0.451924    
-SBO415207   -3.656e-02  1.944e-02  -1.881 0.060036 .  
-SBO015207   -9.850e-03  1.068e-02  -0.922 0.356492    
-MAN450207   -1.690e-08  3.531e-08  -0.479 0.632118    
-WTN220207   -2.509e-08  4.180e-08  -0.600 0.548381    
-RTN130207    3.493e-07  1.740e-07   2.007 0.044782 *  
-RTN131207   -2.952e-05  2.390e-05  -1.235 0.216778    
-AFN120207   -1.367e-06  7.475e-07  -1.829 0.067364 .  
-BPS030214    4.376e-04  2.388e-04   1.833 0.066844 .  
-LND110210    2.073e-04  8.507e-05   2.437 0.014811 *  
-POP060210    3.339e-04  2.632e-04   1.268 0.204640    
----
-Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-(Dispersion parameter for binomial family taken to be 1)
-
-    Null deviance: 2120.31  on 2488  degrees of freedom
-Residual deviance:  742.44  on 2437  degrees of freedom
-AIC: 846.44
-
-Number of Fisher Scoring iterations: 8
+``` r
+> preds_obj1 <- prediction(train$probs, train$winner, label.ordering=c("Democrat","Republican"))
+> perf_obj1 <- performance(preds_obj1, "tpr","fpr")
+> perf_df1 <- data_frame(fpr=unlist(perf_obj1@x.values),
++                        tpr= unlist(perf_obj1@y.values),
++                        threshold=unlist(perf_obj1@alpha.values), 
++                        model="GLM1")
+Warning: `data_frame()` was deprecated in tibble 1.1.0.
+Please use `tibble()` instead.
+This warning is displayed once every 8 hours.
+Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated.
 ```
 
 Significant variables = LND110210 0.014811 *, AFN120207 0.067364 .  
