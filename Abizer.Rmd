@@ -8,7 +8,7 @@ output:
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 4)
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, echo = FALSE, include=TRUE, fig.width = 9, fig.height = 4)
 ```
 
 ```{r packageCheck, include=FALSE}
@@ -21,7 +21,6 @@ lapply(mypacks, library, character.only=TRUE)  # load all packages
 
 ```{r}
 key <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/county_facts_dictionary.csv")
-key
 ```
 
 ```{r}
@@ -35,13 +34,20 @@ train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep
 ```
 
 ```{r}
-xvars <- str_c(names(train)[1:51], collapse="+")
+
+train1 <- train %>% select(RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214)
+
+xvars <- str_c(names(train1)[1:11], collapse="+")
 myform <- as.formula(str_c("winner ~ ", xvars))
 myform
 ```
 
+
+
 ```{r}
 winner.glm <- glm(myform, data = train, family = binomial)
+
+summary(winner.glm)
 
 train <- train %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
 
@@ -60,24 +66,41 @@ perf_df1 <- data_frame(fpr=unlist(perf_obj1@x.values),
                        tpr= unlist(perf_obj1@y.values),
                        threshold=unlist(perf_obj1@alpha.values), 
                        model="train")
+
+ggplot(perf_df1, aes(x=fpr, y=tpr, color=model)) +  geom_line(size=1.5) + 
+  labs(x="false positive rate", y="true positive rate", title="ROC curve for logistic regression") + 
+  geom_abline(slope=1,intercept=0, linetype=3) 
 ```
 
 
+```{r}
+set.seed(5)
+cost <- function(y, pi) 1-mean(y==(pi>0.05))
+train_error <- cv.glm(data = train, winner.glm,cost,5)
+train_error$delta[1]
+```
 
-Significant variables = LND110210   0.014811 *, 
-AFN120207   0.067364 .  
-BPS030214   0.066844 .  
-RTN130207   0.044782 * 
-SBO415207   0.060036 . 
-NES010213   0.090196 .
-HSD310213   0.001863 ** 
-INC910213   0.043344 *  
-HSG096213   0.020870 *  
-HSG495213   1.95e-08 ***
-POP815213   0.004269 ** 
-EDU635213   0.001348 ** 
-EDU685213   0.000545 ***
-POP715213   0.000874 ***
-AGE295214   0.001854 ** 
-AGE775214   3.72e-05 ***
-PST120214   0.007898 ** 
+# K-nn 
+
+```{r}
+set.seed(7)
+n <- nrow(train1)
+
+xvars <- str_c(names(train1)[1:11], collapse="+")
+
+train_index <- sample(1:n, size=round(.8*n))
+
+train2 <- train %>% slice(train_index) %>% select( RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214,winner)
+
+test2 <- test %>% slice(-train_index) %>% select( RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214)
+
+```
+
+train_knn <- knn(train2[, -1], test2, train2$winner[train_index], k=10)
+
+train4 <- data_frame( y=train2[-train_index],prediction = train_knn) %>% 
+  summarize(accuracy = mean(prediction == y), 
+                   precision = sum(prediction == "Default" & y == "Default")/sum(prediction == "Default"),
+                   recall = sum(prediction == "Default" & y == "Default")/sum(y == "Default"),
+                   ) 
+```
