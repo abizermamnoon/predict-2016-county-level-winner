@@ -1,0 +1,90 @@
+---
+title: "Team Project 2" 
+author: "Abizer and Luis"
+date: "Day 17"
+output: 
+  github_document:
+    pandoc_args: --webtex
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, include=TRUE, fig.width = 9, fig.height = 4)
+```
+
+```{r packageCheck, include=FALSE}
+mypacks <- c("ggplot2","dplyr","readr","tidyr", "ROCR", "boot","class","randomForest","e1071", "stringr","partykit","rpart")  # what packages are needed?
+packs <- installed.packages()   # find installed package list
+install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
+if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
+lapply(mypacks, library, character.only=TRUE)  # load all packages
+```
+
+```{r}
+key <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/county_facts_dictionary.csv")
+key
+```
+
+```{r}
+train <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/train.csv")
+```
+
+
+```{r}
+train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican"))
+```
+
+```{r}
+xvars <- str_c(names(train)[1:51], collapse="+")
+myform <- as.formula(str_c("winner ~ ", xvars))
+myform
+```
+
+```{r}
+winner.glm <- glm(myform, data = train, family = binomial)
+
+train <- train %>% mutate(probs = predict(winner.glm, type = "response"))
+
+ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
+```
+
+```{r}
+preds_obj1 <- prediction(train$probs, train$winner, label.ordering=c("Democrat","Republican"))
+perf_obj1 <- performance(preds_obj1, "tpr","fpr")
+perf_df1 <- data_frame(fpr=unlist(perf_obj1@x.values),
+                       tpr= unlist(perf_obj1@y.values),
+                       threshold=unlist(perf_obj1@alpha.values), 
+                       model="GLM1")
+```
+
+```{r}
+#install.packages('rpart')
+library('rpart')
+loans_rpart <- rpart(myform, data=train, control=rpart.control(maxdepth=2))
+plot(as.party(loans_rpart))
+```
+```{r}
+
+train1 <- train %>% select(RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214)
+
+xvars <- str_c(names(train1)[1:11], collapse="+")
+myform <- as.formula(str_c("winner ~ ", xvars))
+myform
+```
+
+Significant variables = LND110210   0.014811 *, 
+AFN120207   0.067364 .  
+BPS030214   0.066844 .  
+RTN130207   0.044782 * 
+SBO415207   0.060036 . 
+NES010213   0.090196 .
+HSD310213   0.001863 ** 
+INC910213   0.043344 *  
+HSG096213   0.020870 *  
+HSG495213   1.95e-08 ***
+POP815213   0.004269 ** 
+EDU635213   0.001348 ** 
+EDU685213   0.000545 ***
+POP715213   0.000874 ***
+AGE295214   0.001854 ** 
+AGE775214   3.72e-05 ***
+PST120214   0.007898 ** 
