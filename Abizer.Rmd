@@ -47,12 +47,10 @@ library(plyr)
 train1 <- train %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","POP715213"="Percent_living_in_same_house_multiple_years","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
 
 test1 <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","POP715213"="Percent_living_in_same_house_multiple_years","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
-```
 
-```{r}
 Train1 <- train1 %>% select(Retail_Sales_07, Income_per_capita, Percent_multi_unit_housing, Median_house_value, Spoken_non_english_lang, Percent_Highschool_grad, Percent_Undergrad, Percent_living_in_same_house_multiple_years, percent_under_18, percent_over_65, percent_change_in_pop,winner)
 
-xvars <- str_c(names(train1)[1:11], collapse="+")
+xvars <- str_c(names(Train1)[1:11], collapse="+")
 myform <- as.formula(str_c("winner ~ ", xvars))
 
 winner.glm <- glm(myform, data = Train1, family = binomial)
@@ -113,31 +111,22 @@ K-nn
 
 ```{r}
 set.seed(7)
-n <- nrow(train1)
+n <- nrow(train)
 
-xvars <- str_c(names(train1)[1:11], collapse="+")
+xvars <- str_c(names(Train1)[1:11], collapse=",")
 
 train_index <- sample(1:n, size=round(.8*n))
 
-train2 <- train %>% slice(train_index) %>% select( Retail_Sales_07, Income_per_capita, Percent_multi_unit_housing, Median_house_value, Spoken_non_english_lang, Percent_Highschool_grad, Percent_Undergrad, Percent_living_in_same_house_multiple_years, percent_under_18, percent_over_65, percent_change_in_pop,winner)
+trainX <- train1 %>% slice(train_index) %>% select( -winner,-winner16)
 
-test2 <- test %>% slice(-train_index) %>% select( Retail_Sales_07, Income_per_capita, Percent_multi_unit_housing, Median_house_value, Spoken_non_english_lang, Percent_Highschool_grad, Percent_Undergrad, Percent_living_in_same_house_multiple_years, percent_under_18, percent_over_65, percent_change_in_pop)
+testX <- test1 %>% slice(-train_index) 
 
+dim(trainX)
+dim(testX)
+winner_knn <- knn(trainX,testX,cl = train$winner[train_index],k=10)
 
 ```
-train_knn <- knn(train2[, -1], test2, train2$winner[train_index], k=10)
+winner_knn.cv <- knn.cv(Train1[,xvars],cl = Train1$winner,k=10)
 
-train4 <- data_frame( y=train2[-train_index],prediction = train_knn) %>% 
-  summarize(accuracy = mean(prediction == y), 
-                   precision = sum(prediction == "Default" & y == "Default")/sum(prediction == "Default"),
-                   recall = sum(prediction == "Default" & y == "Default")/sum(y == "Default"),
-                   ) 
 
-train_knn <- knn(train2[, -1], test2, train2$winner[train_index], k=10)
-
-train4 <- data_frame( y=train2[-train_index],prediction = train_knn) %>% 
-  summarize(accuracy = mean(prediction == y), 
-                   precision = sum(prediction == "Default" & y == "Default")/sum(prediction == "Default"),
-                   recall = sum(prediction == "Default" & y == "Default")/sum(y == "Default"),
-                   ) 
 
