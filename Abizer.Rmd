@@ -15,7 +15,7 @@ knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, ech
 Download the packages
 
 ```{r packageCheck, include=FALSE}
-mypacks <- c("ggplot2","dplyr","readr","tidyr", "ROCR", "boot","class","randomForest","e1071", "stringr","partykit","rpart")  # what packages are needed?
+mypacks <- c("ggplot2","dplyr","readr","tidyr", "ROCR", "boot","class","randomForest","e1071", "stringr","partykit","rpart","plyr")  # what packages are needed?
 packs <- installed.packages()   # find installed package list
 install.me <- mypacks[!(mypacks %in% packs[,"Package"])]  #what needs to be installed?
 if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.us.r-project.org")   # install (if needed)
@@ -25,6 +25,7 @@ lapply(mypacks, library, character.only=TRUE)  # load all packages
 Read the key file
 ```{r}
 key <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/county_facts_dictionary.csv")
+
 ```
 
 Create the train and test dataframes
@@ -40,13 +41,21 @@ train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep
 ```
 
 We chose the x-variables by determining which variables were most significant using a regression analysis
+
 ```{r}
-train1 <- train %>% select(RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214)
+library(plyr)
+train1 <- train %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","POP715213"="Percent_living_in_same_house_multiple_years","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
+
+test1 <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","POP715213"="Percent_living_in_same_house_multiple_years","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
+```
+
+```{r}
+Train1 <- train1 %>% select(Retail_Sales_07, Income_per_capita, Percent_multi_unit_housing, Median_house_value, Spoken_non_english_lang, Percent_Highschool_grad, Percent_Undergrad, Percent_living_in_same_house_multiple_years, percent_under_18, percent_over_65, percent_change_in_pop,winner)
 
 xvars <- str_c(names(train1)[1:11], collapse="+")
 myform <- as.formula(str_c("winner ~ ", xvars))
 
-winner.glm <- glm(myform, data = train, family = binomial)
+winner.glm <- glm(myform, data = Train1, family = binomial)
 
 summary(winner.glm)
 ```
@@ -55,9 +64,9 @@ summary(winner.glm)
 We then fit the model "winner.glm" into the train and test data to create probabilities. We then set a threshold of 0.05. For example, if the model determines the probability to be 0.1, prediction will be Republican or else Democrat. We then calculated the accuracy, precision and recall for the model. Then, we created a double density curve
 
 ```{r}
-train <- train %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
+train <- Train1 %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
 
-test <- test %>% mutate(probs = predict(winner.glm, newdata = test, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
+test <- test1 %>% mutate(probs = predict(winner.glm, newdata = test1, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
 
 train %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"))
 
@@ -85,6 +94,19 @@ cost <- function(y, pi) 1-mean(y==(pi>0.05))
 train_error <- cv.glm(data = train, winner.glm,cost,5)
 train_error$delta[1]
 ```
+Random Forest
+
+```{r}
+set.seed(5)
+
+winner_rforest <- randomForest(myform,data = train, ntree = 300, mtry = 5)
+
+train3 <- train %>% mutate(probs = predict(winner_rforest, type = "prob")[,2],prediction = predict(winner_rforest, type = "response"))
+
+test3 <- test %>% mutate(prediction = predict(winner_rforest,type = "response",newdata = test))
+
+train3 %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"), error = 1-accuracy)
+```
 
 K-nn 
 
@@ -96,9 +118,9 @@ xvars <- str_c(names(train1)[1:11], collapse="+")
 
 train_index <- sample(1:n, size=round(.8*n))
 
-train2 <- train %>% slice(train_index) %>% select( RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214,winner)
+train2 <- train %>% slice(train_index) %>% select( Retail_Sales_07, Income_per_capita, Percent_multi_unit_housing, Median_house_value, Spoken_non_english_lang, Percent_Highschool_grad, Percent_Undergrad, Percent_living_in_same_house_multiple_years, percent_under_18, percent_over_65, percent_change_in_pop,winner)
 
-test2 <- test %>% slice(-train_index) %>% select( RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214)
+test2 <- test %>% slice(-train_index) %>% select( Retail_Sales_07, Income_per_capita, Percent_multi_unit_housing, Median_house_value, Spoken_non_english_lang, Percent_Highschool_grad, Percent_Undergrad, Percent_living_in_same_house_multiple_years, percent_under_18, percent_over_65, percent_change_in_pop)
 
 
 ```
