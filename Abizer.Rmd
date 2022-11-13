@@ -6,10 +6,13 @@ output:
   github_document:
     pandoc_args: --webtex
 ---
+This code chunk ensures that there are no commands in output file
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, echo = FALSE, include=TRUE, fig.width = 9, fig.height = 4)
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, echo = TRUE, include=TRUE, fig.width = 9, fig.height = 4)
 ```
+
+Download the packages
 
 ```{r packageCheck, include=FALSE}
 mypacks <- c("ggplot2","dplyr","readr","tidyr", "ROCR", "boot","class","randomForest","e1071", "stringr","partykit","rpart")  # what packages are needed?
@@ -19,36 +22,39 @@ if (length(install.me) >= 1) install.packages(install.me, repos = "http://cran.u
 lapply(mypacks, library, character.only=TRUE)  # load all packages
 ```
 
+Read the key file
 ```{r}
 key <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/county_facts_dictionary.csv")
 ```
 
+Create the train and test dataframes
 ```{r}
 train <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/train.csv")
 test <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/test_No_Y.csv")
 ```
 
+Define a winner variable, which is based on winner16 variable. Winner is set as Democrat if winner16 is Dem and Republican if winner16 is Rep
 
 ```{r}
 train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican"))
 ```
 
+We chose the x-variables by determining which variables were most significant using a regression analysis
 ```{r}
-
 train1 <- train %>% select(RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214)
 
 xvars <- str_c(names(train1)[1:11], collapse="+")
 myform <- as.formula(str_c("winner ~ ", xvars))
-myform
-```
 
-
-
-```{r}
 winner.glm <- glm(myform, data = train, family = binomial)
 
 summary(winner.glm)
+```
 
+
+We then fit the model "winner.glm" into the train and test data to create probabilities. We then set a threshold of 0.05. For example, if the model determines the probability to be 0.1, prediction will be Republican or else Democrat. We then calculated the accuracy, precision and recall for the model. Then, we created a double density curve
+
+```{r}
 train <- train %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
 
 test <- test %>% mutate(probs = predict(winner.glm, newdata = test, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
@@ -58,7 +64,7 @@ train %>% summarize(accuracy = mean(winner == prediction), precision = sum(winne
 ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
 ```
 
-
+Here, we created a ROC curve for the training data
 ```{r}
 preds_obj1 <- prediction(train$probs, train$winner, label.ordering=c("Democrat","Republican"))
 perf_obj1 <- performance(preds_obj1, "tpr","fpr")
@@ -72,7 +78,7 @@ ggplot(perf_df1, aes(x=fpr, y=tpr, color=model)) +  geom_line(size=1.5) +
   geom_abline(slope=1,intercept=0, linetype=3) 
 ```
 
-
+I calculated the error of the model using a 5-fold cross validation and a 0.05 threshold
 ```{r}
 set.seed(5)
 cost <- function(y, pi) 1-mean(y==(pi>0.05))
@@ -80,7 +86,7 @@ train_error <- cv.glm(data = train, winner.glm,cost,5)
 train_error$delta[1]
 ```
 
-# K-nn 
+K-nn 
 
 ```{r}
 set.seed(7)
