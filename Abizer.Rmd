@@ -96,6 +96,7 @@ train_error$delta[1]
 ```
 Random Forest
 
+Created a random forest model with 300 trees that randomly select out of 5 variables at each split. Then we fitted the model to the training data and the testing data. We then calculated the accuracy, precision, recall and error for the training data predictions
 ```{r}
 set.seed(5)
 
