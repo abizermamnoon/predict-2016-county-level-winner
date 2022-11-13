@@ -100,7 +100,15 @@ train2 <- train %>% slice(train_index) %>% select( RTN130207, INC910213, HSG0962
 
 test2 <- test %>% slice(-train_index) %>% select( RTN130207, INC910213, HSG096213, HSG495213, POP815213, EDU635213, EDU685213, POP715213, AGE295214, AGE775214, PST120214)
 
+
 ```
+train_knn <- knn(train2[, -1], test2, train2$winner[train_index], k=10)
+
+train4 <- data_frame( y=train2[-train_index],prediction = train_knn) %>% 
+  summarize(accuracy = mean(prediction == y), 
+                   precision = sum(prediction == "Default" & y == "Default")/sum(prediction == "Default"),
+                   recall = sum(prediction == "Default" & y == "Default")/sum(y == "Default"),
+                   ) 
 
 train_knn <- knn(train2[, -1], test2, train2$winner[train_index], k=10)
 
@@ -109,4 +117,4 @@ train4 <- data_frame( y=train2[-train_index],prediction = train_knn) %>%
                    precision = sum(prediction == "Default" & y == "Default")/sum(prediction == "Default"),
                    recall = sum(prediction == "Default" & y == "Default")/sum(y == "Default"),
                    ) 
-```
+
