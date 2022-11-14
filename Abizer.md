@@ -164,7 +164,8 @@ and error for the training data predictions
 1 0.9144235 0.9341263 0.9673141 0.08557654
 ```
 
-K-nn
+Here, we used the k nearest neighbours model with k = 10. We then
+compute the accuracy, precision, recall and error for the model K-nn
 
 ``` r
 > set.seed(7)
@@ -183,6 +184,12 @@ K-nn
 > dim(testX)
 [1] 123  51
 > winner_knn <- knn(trainX,testX,cl = train$winner[train_index],k=10)
+> 
+> winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Percent_multi_unit_housing", "Median_house_value", "Spoken_non_english_lang", "Percent_Highschool_grad", "Percent_Undergrad", "Percent_living_in_same_house_multiple_years", "percent_under_18", "percent_over_65", "percent_change_in_pop")],cl = Train1$winner,k=10)
+> 
+> train_knn <- data_frame(y = Train1$winner, prediction = winner_knn.cv) 
+> 
+> train_knn %>% summarize(accuracy = mean(y == prediction), precision = sum(y == "Republican" & prediction == "Republican")/sum(prediction == "Republican"),recall = sum(y == "Republican" & prediction == "Republican")/sum(y == "Republican"), error = 1 - accuracy)
+   accuracy precision   recall     error
+1 0.8690237 0.8812473 0.977262 0.1309763
 ```
-
-winner_knn.cv \<- knn.cv(Train1\[,xvars\],cl = Train1$winner,k=10)
