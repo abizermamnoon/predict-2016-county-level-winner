@@ -9,7 +9,7 @@ output:
 This code chunk ensures that there are no commands in output file
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, echo = TRUE, include=TRUE, fig.width = 9, fig.height = 4)
+knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, echo = FALSE, include=TRUE, fig.width = 9, fig.height = 4)
 ```
 
 Download the packages
@@ -76,6 +76,7 @@ train %>% summarize(accuracy = mean(winner == prediction), precision = sum(winne
 
 ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
 ```
+The accuracy for the logistic regression model is 0.875
 
 Here, we created a ROC curve for the training data
 ```{r}
@@ -107,16 +108,19 @@ Created a random forest model with 300 trees that randomly select out of 5 varia
 ```{r}
 set.seed(5)
 
-winner_rforest <- randomForest(myform,data = train, ntree = 300, mtry = 5)
+winner_rforest <- randomForest(myform,data = train, ntree = 400, mtry = 4)
 
 train3 <- train %>% mutate(probs = predict(winner_rforest, type = "prob")[,2],prediction = predict(winner_rforest, type = "response"))
 
 test3 <- test %>% mutate(prediction = predict(winner_rforest,type = "response",newdata = test))
 
-train3 %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"), error = 1-accuracy)
+train3 %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"), error = 1 - accuracy)
+
+
+
 ```
 
-The error is 0.0916 and the accuracy is 0.908
+The error is 0.09 and the accuracy is 0.91
 
 Here, we used the k nearest neighbours model with k = 10. We then compute the accuracy, precision, recall and error for the model
 K-nn 
@@ -137,12 +141,16 @@ dim(trainX)
 dim(testX)
 winner_knn <- knn(trainX,testX,cl = train$winner[train_index],k=10)
 
-winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop")],cl = Train1$winner,k=10)
+winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop")],cl = Train1$winner,k=50)
 
 train_knn <- data_frame(y = Train1$winner, prediction = winner_knn.cv) 
 
 train_knn %>% summarize(accuracy = mean(y == prediction), precision = sum(y == "Republican" & prediction == "Republican")/sum(prediction == "Republican"),recall = sum(y == "Republican" & prediction == "Republican")/sum(y == "Republican"), error = 1 - accuracy)
 ```
-Error is 0.131 and accuracy is 0.868
+Error is 0.127 and accuracy is 0.873
 
-
+We use random forest to predict our model. We added the predictions to the table test_No_Y and and created a csv file
+```{r}
+test_No_Y <- Test1 %>% mutate(pred_winner = predict(winner_rforest, type = "response",newdata = Test1))
+write_csv(test_No_Y, "test_No_Y_LastNames.csv")
+```
