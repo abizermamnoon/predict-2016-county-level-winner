@@ -45,9 +45,9 @@ percent_change_in_pop, , percent_change_in_pop
 > 
 > test1 <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","POP715213"="Percent_living_in_same_house_multiple_years","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop")) 
 > 
-> Train1 <- train1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value,Percent_multi_unit_housing, Spoken_non_english_lang, Percent_Undergrad,  Percent_living_in_same_house_multiple_years, percent_over_65, winner)
+> Train1 <- train1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value,Percent_multi_unit_housing, Spoken_non_english_lang, Percent_Undergrad,  Percent_living_in_same_house_multiple_years, percent_change_in_pop, winner)
 > 
-> Test1 <- test1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value, Spoken_non_english_lang, Percent_multi_unit_housing,Percent_living_in_same_house_multiple_years, Percent_Undergrad, percent_over_65)
+> Test1 <- test1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value, Spoken_non_english_lang, Percent_multi_unit_housing,Percent_living_in_same_house_multiple_years, Percent_Undergrad, percent_change_in_pop)
 > 
 > xvars <- str_c(names(Train1)[1:8], collapse="+")
 > myform <- as.formula(str_c("winner ~ ", xvars))
@@ -61,37 +61,37 @@ glm(formula = myform, family = binomial, data = Train1)
 
 Deviance Residuals: 
     Min       1Q   Median       3Q      Max  
--3.1047   0.1350   0.2449   0.3853   3.3755  
+-3.0933   0.1303   0.2326   0.3772   3.5282  
 
 Coefficients:
                                               Estimate Std. Error z value
-(Intercept)                                  1.399e+01  1.907e+00   7.335
-Retail_Sales_07                             -1.057e-07  2.928e-08  -3.611
-Income_per_capita                            3.677e-04  3.074e-05  11.960
-Median_house_value                          -1.309e-05  1.735e-06  -7.549
-Percent_multi_unit_housing                  -1.132e-01  1.292e-02  -8.760
-Spoken_non_english_lang                     -3.838e-02  6.343e-03  -6.051
-Percent_Undergrad                           -1.608e-01  1.665e-02  -9.655
-Percent_living_in_same_house_multiple_years -1.610e-01  2.208e-02  -7.291
-percent_over_65                              3.415e-02  2.085e-02   1.638
+(Intercept)                                  1.222e+01  1.898e+00   6.437
+Retail_Sales_07                             -1.269e-07  3.098e-08  -4.096
+Income_per_capita                            3.667e-04  3.104e-05  11.816
+Median_house_value                          -1.412e-05  1.785e-06  -7.914
+Percent_multi_unit_housing                  -1.205e-01  1.284e-02  -9.380
+Spoken_non_english_lang                     -4.910e-02  6.285e-03  -7.813
+Percent_Undergrad                           -1.831e-01  1.736e-02 -10.543
+Percent_living_in_same_house_multiple_years -1.243e-01  2.182e-02  -5.694
+percent_change_in_pop                        1.713e-01  2.512e-02   6.818
                                             Pr(>|z|)    
-(Intercept)                                 2.22e-13 ***
-Retail_Sales_07                             0.000305 ***
+(Intercept)                                 1.22e-10 ***
+Retail_Sales_07                             4.21e-05 ***
 Income_per_capita                            < 2e-16 ***
-Median_house_value                          4.40e-14 ***
+Median_house_value                          2.50e-15 ***
 Percent_multi_unit_housing                   < 2e-16 ***
-Spoken_non_english_lang                     1.44e-09 ***
+Spoken_non_english_lang                     5.58e-15 ***
 Percent_Undergrad                            < 2e-16 ***
-Percent_living_in_same_house_multiple_years 3.08e-13 ***
-percent_over_65                             0.101423    
+Percent_living_in_same_house_multiple_years 1.24e-08 ***
+percent_change_in_pop                       9.23e-12 ***
 ---
 Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 (Dispersion parameter for binomial family taken to be 1)
 
     Null deviance: 2120.3  on 2488  degrees of freedom
-Residual deviance: 1229.9  on 2480  degrees of freedom
-AIC: 1247.9
+Residual deviance: 1183.0  on 2480  degrees of freedom
+AIC: 1201
 
 Number of Fisher Scoring iterations: 6
 ```
@@ -108,8 +108,8 @@ and recall for the model. Then, we created a double density curve
 > test <- test1 %>% mutate(probs = predict(winner.glm, newdata = test1, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
 > 
 > train %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"))
-  accuracy precision    recall
-1 0.870229 0.8685078 0.9981052
+   accuracy precision    recall
+1 0.8750502 0.8725166 0.9985789
 > 
 > ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
 ```
@@ -145,10 +145,10 @@ a 0.05 threshold
 > cost <- function(y, pi) 1-mean(y==(pi>0.05))
 > train_error <- cv.glm(data = Train1, winner.glm,cost,5)
 > train_error$delta[1]
-[1] 0.129771
+[1] 0.1257533
 ```
 
-The error is 0.13
+The error is 0.126
 
 Random Forest
 
@@ -168,10 +168,10 @@ and error for the training data predictions
 > 
 > train3 %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"), error = 1-accuracy)
    accuracy precision    recall      error
-1 0.9063881 0.9275956 0.9649455 0.09361189
+1 0.9083969 0.9308924 0.9635244 0.09160305
 ```
 
-The error is 0.0936 and the accuracy is 0.907
+The error is 0.0916 and the accuracy is 0.908
 
 Here, we used the k nearest neighbours model with k = 10. We then
 compute the accuracy, precision, recall and error for the model K-nn
@@ -194,7 +194,7 @@ compute the accuracy, precision, recall and error for the model K-nn
 [1] 123   8
 > winner_knn <- knn(trainX,testX,cl = train$winner[train_index],k=10)
 > 
-> winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_over_65")],cl = Train1$winner,k=10)
+> winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop")],cl = Train1$winner,k=10)
 > 
 > train_knn <- data_frame(y = Train1$winner, prediction = winner_knn.cv) 
 > 

@@ -52,9 +52,9 @@ train1 <- train %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="In
 
 test1 <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","POP715213"="Percent_living_in_same_house_multiple_years","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop")) 
 
-Train1 <- train1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value,Percent_multi_unit_housing, Spoken_non_english_lang, Percent_Undergrad,  Percent_living_in_same_house_multiple_years, percent_over_65, winner)
+Train1 <- train1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value,Percent_multi_unit_housing, Spoken_non_english_lang, Percent_Undergrad,  Percent_living_in_same_house_multiple_years, percent_change_in_pop, winner)
 
-Test1 <- test1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value, Spoken_non_english_lang, Percent_multi_unit_housing,Percent_living_in_same_house_multiple_years, Percent_Undergrad, percent_over_65)
+Test1 <- test1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value, Spoken_non_english_lang, Percent_multi_unit_housing,Percent_living_in_same_house_multiple_years, Percent_Undergrad, percent_change_in_pop)
 
 xvars <- str_c(names(Train1)[1:8], collapse="+")
 myform <- as.formula(str_c("winner ~ ", xvars))
@@ -98,7 +98,7 @@ cost <- function(y, pi) 1-mean(y==(pi>0.05))
 train_error <- cv.glm(data = Train1, winner.glm,cost,5)
 train_error$delta[1]
 ```
-The error is 0.13
+The error is 0.126
 
 Random Forest
 
@@ -116,7 +116,7 @@ test3 <- test %>% mutate(prediction = predict(winner_rforest,type = "response",n
 train3 %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"), error = 1-accuracy)
 ```
 
-The error is 0.0936 and the accuracy is 0.907
+The error is 0.0916 and the accuracy is 0.908
 
 Here, we used the k nearest neighbours model with k = 10. We then compute the accuracy, precision, recall and error for the model
 K-nn 
@@ -137,7 +137,7 @@ dim(trainX)
 dim(testX)
 winner_knn <- knn(trainX,testX,cl = train$winner[train_index],k=10)
 
-winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_over_65")],cl = Train1$winner,k=10)
+winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop")],cl = Train1$winner,k=10)
 
 train_knn <- data_frame(y = Train1$winner, prediction = winner_knn.cv) 
 
