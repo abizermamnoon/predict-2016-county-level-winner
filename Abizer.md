@@ -15,15 +15,7 @@ Define a winner variable, which is based on winner16 variable. Winner is
 set as Democrat if winner16 is Dem and Republican if winner16 is Rep
 
 We chose the x-variables by determining which variables were most
-significant using a regression analysis. We then removed certain
-variables such as Percent living in multi unit housing and percent
-living in same house for multiple years. Our reasoning is that if a
-house has a high median value, the occupants will probably have separate
-rooms. Also any person may choose to live in a house for several years
-because it might be closer to work, family etc. We don’t think that it
-suggests anything about the voter.
-
-percent_change_in_pop, , percent_change_in_pop
+significant using a regression analysis.
 
 
     Call:

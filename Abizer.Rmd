@@ -26,7 +26,6 @@ lapply(mypacks, library, character.only=TRUE)  # load all packages
 Read the key file
 ```{r}
 key <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/county_facts_dictionary.csv")
-
 ```
 
 Create the train and test dataframes
@@ -41,10 +40,10 @@ Define a winner variable, which is based on winner16 variable. Winner is set as 
 train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican"))
 ```
 
-We chose the x-variables by determining which variables were most significant using a regression analysis. We then removed certain variables such as Percent living in multi unit housing and percent living in same house for multiple years. Our reasoning is that if a house has a high median value, the occupants will probably have separate rooms. Also any person may choose to live in a house for several years because it might be closer to work, family etc. We don't think that it suggests anything about the voter.
+We chose the x-variables by determining which variables were most significant using a regression analysis. 
 
-percent_change_in_pop,
-, percent_change_in_pop
+
+
 ```{r}
 library(plyr)
 
