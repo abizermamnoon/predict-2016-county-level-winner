@@ -6,7 +6,10 @@ output:
   github_document:
     pandoc_args: --webtex
 ---
-This code chunk ensures that there are no commands in output file
+
+In this project, we used the training dataset to create a model that predicts the county- level winner of the 2016 Presidential Election. The winner of each county is classified as Democrat (Clinton) and Republican (Rep)
+
+This code chunk ensures that there are no commands in output file.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, echo = FALSE, include=TRUE, fig.width = 9, fig.height = 4)
@@ -24,41 +27,46 @@ lapply(mypacks, library, character.only=TRUE)  # load all packages
 
 
 Read the key file
+
 ```{r}
 key <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/county_facts_dictionary.csv")
 ```
 
-Create the train and test dataframes
+Create the train and test data frames
+
 ```{r}
 train <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/train.csv")
 test <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/test_No_Y.csv")
 ```
 
-Define a winner variable, which is based on winner16 variable. Winner is set as Democrat if winner16 is Dem and Republican if winner16 is Rep
+We were concerned that there would be NA values in the “winner16” variable. To remove the NAs, we created a new variable called “winner” that omits the NA values. “Winner” variable is classified as Democrat if the actual winner is “Dem” and Republican if the actual winner is “Rep”.
 
 ```{r}
 train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican"))
 ```
 
-We chose the x-variables by determining which variables were most significant using a regression analysis. 
-
-
+The fun part was deciding the variables we wanted to use in order to create our model. We ran a regression analysis with the 51 predictor variables and deciphered that 17 of them were significant. However, we wanted to avoid overfitting hence we ran a regression analysis with these 17 variables against the winner variable and chose only those variables that had a significance level less than 0.0001. We were also concerned that some of these variables might be correlated to each other which might be affecting their significance level. To examine this, we ran a individual regression analysis for each variable against the winner variable and chose the ones that were still significant. After doing this procedure, we concluded that retail sales, income/capita, median house value, percentage of population living in multi unit housing, languages other English spoken at home, percentage of population who have completed undergraduate degree or higher, percentage of population living in same housing for multiple years and percentage change in population are significant. 
 
 ```{r}
 library(plyr)
 
 train1 <- train %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","POP715213"="Percent_living_in_same_house_multiple_years","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
-
+# Here we renamed the variables that we were going to use in the train dataset and saved the data frame as train1
 test1 <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","POP715213"="Percent_living_in_same_house_multiple_years","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop")) 
+# here we renamed the variables we were going to use in the test dataset and saved the object as test1
 
 Train1 <- train1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value,Percent_multi_unit_housing, Spoken_non_english_lang, Percent_Undergrad,  Percent_living_in_same_house_multiple_years, percent_change_in_pop, winner)
+# here we create a new dataframe called Train1 that has te variables that we want
 
 Test1 <- test1 %>% select(Retail_Sales_07, Income_per_capita, Median_house_value, Spoken_non_english_lang, Percent_multi_unit_housing,Percent_living_in_same_house_multiple_years, Percent_Undergrad, percent_change_in_pop)
+# here we create a new dataframe called Test1 that has the variables that we want
 
 xvars <- str_c(names(Train1)[1:8], collapse="+")
 myform <- as.formula(str_c("winner ~ ", xvars))
+#x-variables are the names of the first 8 columns in the Train1 dataset
 
 winner.glm <- glm(myform, data = Train1, family = binomial)
+# we created a model based on the Train1 dataset
 
 summary(winner.glm)
 ```
@@ -68,13 +76,20 @@ We then fit the model "winner.glm" into the train and test data to create probab
 
 ```{r}
 train <- Train1 %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
+# here we created a new dataframe train in which we fitted the model winner.glm to the training data and included the probabilities and predictions
 
 test <- test1 %>% mutate(probs = predict(winner.glm, newdata = test1, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
+# here we created a new dataframe test in which we fitted the model winner.glm to the testing data and included the probabilities and predictions
 
 train %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"))
+# here we calculated the accuracy, precision and recall by comparing our predictions to the actual winners
 
 ggplot(train,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
+
+# we created a double density curve
 ```
+The double density curve indicates that our model does well at differentiating between the winner being a Democrat and a Republican because there is little overlap between the curves. However, the double density curves are not evenly spread out on the graph, which seems troubling.
+
 The accuracy for the logistic regression model is 0.875
 
 Here, we created a ROC curve for the training data
@@ -89,40 +104,52 @@ perf_df1 <- data_frame(fpr=unlist(perf_obj1@x.values),
 ggplot(perf_df1, aes(x=fpr, y=tpr, color=model)) +  geom_line(size=1.5) + 
   labs(x="false positive rate", y="true positive rate", title="ROC curve for logistic regression") + 
   geom_abline(slope=1,intercept=0, linetype=3) 
+
+# here we created a ROC curve
 ```
 
+The ROC curve also suggests that our model is very good because it is close to a right angled triangle and is much better than a random classifier.
+
 I calculated the error of the model using a 5-fold cross validation and a 0.05 threshold
+
 ```{r}
 set.seed(5)
 cost <- function(y, pi) 1-mean(y==(pi>0.05))
 train_error <- cv.glm(data = Train1, winner.glm,cost,5)
 train_error$delta[1]
+# here we used a 5-fold cross validation to calculate the error for logistic regression model
 ```
+
 The error is 0.126
 
 Random Forest
 
-Created a random forest model with 300 trees that randomly select out of 5 variables at each split. Then we fitted the model to the training data and the testing data. We then calculated the accuracy, precision, recall and error for the training data predictions
+We then created a random forest model called winner_rforest with 400 trees that randomly select out of 4 variables at each split. To choose the number of bootstrapped trees and the number of predictors to randomly select, we tried numbers around 400 and 4 respectively. We noticed that the accuracy goes down if we input more/less predictors or more/less trees hence we decided to stick with 400 trees and 4 predictors to randomly select. Then we fitted the model to the training data, and calculated the accuracy, precision, recall and error for the training data predictions. 
+
 
 ```{r}
 set.seed(5)
 
 winner_rforest <- randomForest(myform,data = train, ntree = 400, mtry = 4)
+# we created a random forest model that has 400 trees and randomly selects out of 4 variables at each split
 
 train3 <- train %>% mutate(probs = predict(winner_rforest, type = "prob")[,2],prediction = predict(winner_rforest, type = "response"))
 
+# we created a new data frame called train3 in which we fitted the random forest model that we created to the training dataset and computed the predictions 
+
 test3 <- test %>% mutate(prediction = predict(winner_rforest,type = "response",newdata = test))
+
+# we created a new data frame called test3 in which we fitted the random forest model that we created to the testing dataset and computed the predictions 
 
 train3 %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"), error = 1 - accuracy)
 
-
+# here we computed the accuracy, precision, recall and error of our random forest model by comparing the predictions to the actual winners
 
 ```
 
-The error is 0.09 and the accuracy is 0.91
+Our accuracy was 0.91 and error was 0.09. 
 
-Here, we used the k nearest neighbours model with k = 10. We then compute the accuracy, precision, recall and error for the model
-K-nn 
+Finally, we then used the k nearest neighbours model with k = 50 and called it winner_knn. We also checked the accuracy with higher/lower k and we noticed that k=50 is optimal. We then computed the accuracy, precision, recall and error for the model of train_knn. 
 
 ```{r}
 set.seed(7)
@@ -130,26 +157,30 @@ n <- nrow(train)
 
 xvars <- str_c(names(Train1)[1:9], collapse=",")
 
-train_index <- sample(1:n, size=round(.8*n))
+train_index <- sample(1:n, size=round(.8*n)) # 80% train and 20% test
 
-trainX <- Train1 %>% slice(train_index) %>% select( -winner)
+trainX <- Train1 %>% slice(train_index) %>% select( -winner) # created a new dataframe on which we train our model
 
-testX <- Test1 %>% slice(-train_index) 
+testX <- Test1 %>% slice(-train_index) # we test our model on this dataframe
 
-dim(trainX)
-dim(testX)
-winner_knn <- knn(trainX,testX,cl = train$winner[train_index],k=10)
+dim(trainX) # dimensions of the trainX dataframe
+dim(testX) # dimensions of the testX dataframe
+winner_knn <- knn(trainX,testX,cl = train$winner[train_index],k=10) # created a k-nearest neighbor model with k = 10
 
-winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop")],cl = Train1$winner,k=50)
+winner_knn.cv <- knn.cv(Train1[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop")],cl = Train1$winner,k=50) # here we do cross validation and majority wins 
 
-train_knn <- data_frame(y = Train1$winner, prediction = winner_knn.cv) 
+train_knn <- data_frame(y = Train1$winner, prediction = winner_knn.cv) # dataframe of predictions from teh cross validation model
 
-train_knn %>% summarize(accuracy = mean(y == prediction), precision = sum(y == "Republican" & prediction == "Republican")/sum(prediction == "Republican"),recall = sum(y == "Republican" & prediction == "Republican")/sum(y == "Republican"), error = 1 - accuracy)
+train_knn %>% summarize(accuracy = mean(y == prediction), precision = sum(y == "Republican" & prediction == "Republican")/sum(prediction == "Republican"),recall = sum(y == "Republican" & prediction == "Republican")/sum(y == "Republican"), error = 1 - accuracy) # computed the accuracy, precision, recall and error of k-nearest neighbors model by comparing the predictions with the actual 
 ```
-Error is 0.127 and accuracy is 0.873
 
-We use random forest to predict our model. We added the predictions to the table test_No_Y and and created a csv file
+We got an accuracy of 0.873 and an error of 0.127. 
+
+
+After running the three models, it was clear that the random forest model gave us the highest accuracy of 0.91 and lowest error of 0.09 so we went ahead with that model for our predictions.
+
+
 ```{r}
-test_No_Y <- Test1 %>% mutate(pred_winner = predict(winner_rforest, type = "response",newdata = Test1))
+test_No_Y <- test1 %>% mutate(pred_winner = predict(winner_rforest, type = "response",newdata = Test1))
 write_csv(test_No_Y, "test_No_Y_LastNames.csv")
 ```
