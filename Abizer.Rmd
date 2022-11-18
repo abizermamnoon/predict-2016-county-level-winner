@@ -34,6 +34,7 @@ key <- read.csv("https://raw.githubusercontent.com/mgelman/data/master/county_fa
 
 Create the train and test data frames
 
+
 ```{r}
 train <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/train.csv")
 test <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/test_No_Y.csv")
@@ -42,7 +43,7 @@ test <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/test_No_
 We were concerned that there would be NA values in the “winner16” variable. To remove the NAs, we created a new variable called “winner” that omits the NA values. “Winner” variable is classified as Democrat if the actual winner is “Dem” and Republican if the actual winner is “Rep”.
 
 ```{r}
-train <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican"))
+train_winner <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican")) %>% na.omit()
 ```
 
 The fun part was deciding the variables we wanted to use in order to create our model. We ran a regression analysis with the 51 predictor variables and deciphered that 17 of them were significant. However, we wanted to avoid overfitting hence we ran a regression analysis with these 17 variables against the winner variable and chose only those variables that had a significance level less than 0.0001. We were also concerned that some of these variables might be correlated to each other which might be affecting their significance level. To examine this, we ran a individual regression analysis for each variable against the winner variable and chose the ones that were still significant. After doing this procedure, we concluded that retail sales, income/capita, median house value, percentage of population living in multi unit housing, languages other English spoken at home, percentage of population who have completed undergraduate degree or higher, percentage of population living in same housing for multiple years and percentage change in population are significant. 
@@ -50,7 +51,7 @@ The fun part was deciding the variables we wanted to use in order to create our 
 ```{r}
 library(plyr)
 
-train1 <- train %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","POP715213"="Percent_living_in_same_house_multiple_years","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
+train1 <- train_winner %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","POP715213"="Percent_living_in_same_house_multiple_years","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
 # Here we renamed the variables that we were going to use in the train dataset and saved the data frame as train1
 test1 <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","POP715213"="Percent_living_in_same_house_multiple_years","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop")) 
 # here we renamed the variables we were going to use in the test dataset and saved the object as test1
@@ -182,5 +183,5 @@ After running the three models, it was clear that the random forest model gave u
 
 ```{r}
 test_No_Y <- test1 %>% mutate(pred_winner = predict(winner_rforest, type = "response",newdata = Test1))
-write_csv(test_No_Y, "test_No_Y_LastNames.csv")
+write_csv(test_No_Y, "test_No_Y_MamnoonGomez.csv")
 ```
