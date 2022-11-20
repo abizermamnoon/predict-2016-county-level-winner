@@ -1,13 +1,13 @@
 ---
 title: "Team Project 2" 
 author: "Abizer and Luis"
-date: "Day 17"
+date: "11/19/2022"
 output: 
   github_document:
     pandoc_args: --webtex
 ---
 
-In this project, we used the training dataset to create a model that predicts the county- level winner of the 2016 Presidential Election. The winner of each county is classified as Democrat (Clinton) and Republican (Rep)
+In this project, we used the training data set to create a model that predicts the county- level winner of the 2016 Presidential Election. The winner of each county is classified as Democrat (Clinton) and Republican (Rep)
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(collapse=TRUE, prompt=TRUE,comment=NULL,message=FALSE, echo = FALSE, include=TRUE, fig.width = 9, fig.height = 4) #This code chunk ensures that there are no commands in output file.
@@ -32,51 +32,59 @@ test <- read_csv("https://raw.githubusercontent.com/mgelman/data/master/test_No_
 #Create the train and test data frames
 ```
 
-We were concerned that there would be NA values in the “winner16” variable. To remove the NAs, we created a new variable called “winner” that omits the NA values. “Winner” variable is classified as Democrat if the actual winner is “Dem” and Republican if the actual winner is “Rep”.
+We were concerned that there would be NA values in the “winner16” variable. To remove the NAs, we created a new variable called “winner” that omits the NA values. “Winner” variable is classified as Democrat if the actual winner is “Dem” and Republican if the actual winner is “Rep”. For example, some of the winner variable values are shown below
 
 ```{r}
 train_winner <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democrat", Rep = "Republican")) %>% na.omit()
 head(train_winner$winner)
 ```
 
-The fun part was deciding the variables we wanted to use in order to create our model. We ran a regression analysis with the 51 predictor variables and deciphered that 17 of them were significant. However, we wanted to avoid overfitting hence we ran a regression analysis with these 17 variables against the winner variable and chose only those variables that had a significance level less than 0.0001. We were also concerned that some of these variables might be correlated to each other which might be affecting their significance level. To examine this, we ran a individual regression analysis for each variable against the winner variable and chose the ones that were still significant. After doing this procedure, we concluded that retail sales, income/capita, median house value, percentage of population living in multi unit housing, languages other English spoken at home, percentage of population who have completed undergraduate degree or higher, percentage of population living in same housing for multiple years and percentage change in population are significant. 
+The fun part was deciding the variables we wanted to use in order to create our model. We ran a regression analysis with the 51 predictor variables and deciphered that 17 of them were significant. However, we wanted to avoid overfitting hence we ran a regression analysis with these 17 variables against the winner variable and chose only those variables that had a significance level less than 0.0001. We were also concerned that some of these variables might be correlated to each other which might be affecting their significance level. To examine this, we ran a individual regression analysis for each variable against the winner variable and chose the ones that were still significant. After doing this procedure, we concluded that retail sales, income/capita, median house value, percentage of population living in multi unit housing, languages other English spoken at home, percentage of population who have completed undergraduate degree or higher, percentage of population living in same housing for multiple years and percentage change in population would be suitable for our model 
+
+The first summary table shows the significance level of all the 51 predictors and the second summary table shows the significance level of the 8 predictors we chose
 
 ```{r}
 library(plyr)
 
+xvars_initial <- str_c(names(train_winner)[1:51], collapse="+")
+myform_initial <- as.formula(str_c("winner ~ ", xvars_initial))
+#x-variables are the names of the 51 columns in the Train1 dataset
+
+initial_winner.glm <- glm(myform_initial, data = train_winner, family = binomial)
+# we created a model based on the train dataset
+
+summary(initial_winner.glm)
+
 train_rename <- train_winner %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","POP715213"="Percent_living_in_same_house_multiple_years","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
-# Here we renamed the variables that we were going to use in the train dataset and saved the data frame as train1
+# Here we renamed the variables that we were going to use in the train dataset and saved the data frame as train_rename
 test_rename <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","POP715213"="Percent_living_in_same_house_multiple_years","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop")) 
-# here we renamed the variables we were going to use in the test dataset and saved the object as test1
+# here we renamed the variables we were going to use in the test dataset and saved the object as test_rename
 
 train_final <- train_rename %>% select(Retail_Sales_07, Income_per_capita, Median_house_value,Percent_multi_unit_housing, Spoken_non_english_lang, Percent_Undergrad,  Percent_living_in_same_house_multiple_years, percent_change_in_pop, winner)
-# here we create a new dataframe called Train1 that has te variables that we want
+# here we create a new dataframe called train_final that has the variables that we want
 
 test_final <- test_rename %>% select(Retail_Sales_07, Income_per_capita, Median_house_value, Spoken_non_english_lang, Percent_multi_unit_housing,Percent_living_in_same_house_multiple_years, Percent_Undergrad, percent_change_in_pop)
-# here we create a new dataframe called Test1 that has the variables that we want
+# here we create a new data frame called test_final that has the variables that we want
 
 xvars <- str_c(names(train_final)[1:8], collapse="+")
 myform <- as.formula(str_c("winner ~ ", xvars))
 #x-variables are the names of the first 8 columns in the Train1 dataset
 
 winner.glm <- glm(myform, data = train_final, family = binomial)
-# we created a model based on the Train1 dataset
+# we created a model based on the train_final dataset
 
 summary(winner.glm)
 ```
 
 
-We then fit the model "winner.glm" into the train and test data to create probabilities. We then set a threshold of 0.05. For example, if the model determines the probability to be 0.1, prediction will be Republican or else Democrat. We then calculated the accuracy, precision and recall for the model. Then, we created a double density curve
+We then fit the model "winner.glm" into the train and test data to create probabilities. We then set a threshold of 0.05. For example, if the model determines the probability to be 0.1, prediction will be Republican or else Democrat.  Then, we created a double density curve
 
 ```{r}
 train_final <- train_final %>% mutate(probs = predict(winner.glm, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
-# here we created a new dataframe train in which we fitted the model winner.glm to the training data and included the probabilities and predictions
+# here we fitted the model winner.glm to the training data and included the probabilities and predictions
 
 test_final <- test_final %>% mutate(probs = predict(winner.glm, newdata = test_final, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
-# here we created a new dataframe test in which we fitted the model winner.glm to the testing data and included the probabilities and predictions
-
-train_final %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"))
-# here we calculated the accuracy, precision and recall by comparing our predictions to the actual winners
+# here we fitted the model winner.glm to the testing data and included the probabilities and predictions
 
 ggplot(train_final,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
 
@@ -84,8 +92,6 @@ ggplot(train_final,aes(x = probs, color = winner)) + geom_density(size = 1.5) + 
 ```
 
 The double density curve indicates that most Republicans have an estimated probability of winning around 90%. Probability of Democrats winning is not defined so well but range lower than a Republican
-
-The accuracy for the logistic regression model is 0.875
 
 Here, we created a ROC curve for the training data
 ```{r}
@@ -103,11 +109,15 @@ ggplot(perf_df1, aes(x=fpr, y=tpr, color=model)) +  geom_line(size=1.5) +
 # here we created a ROC curve
 ```
 
-The ROC curve suggests that our model is very good because it is close to a right angled triangle and has a higher sensitivity than a random classifier.
+The ROC curve shows the true positive and false positive rate of our model. ROC curve suggests that our model is very good because it is close to a right angled triangle and has a higher sensitivity than a random classifier.
 
-I calculated the error of the model using a 5-fold cross validation and a 0.05 threshold
+We then calculated the accuracy, precision and recall and the error of the model using a 5-fold cross validation and a 0.05 threshold
 
 ```{r}
+
+train_final %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"))
+# here we calculated the accuracy, precision and recall by comparing our predictions to the actual winners
+
 set.seed(5)
 cost <- function(y, pi) 1-mean(y==(pi>0.05))
 train_error <- cv.glm(data = train_final, winner.glm,cost,5)
@@ -115,7 +125,7 @@ train_error$delta[1]
 # here we used a 5-fold cross validation to calculate the error for logistic regression model
 ```
 
-The error is 0.126
+The accuracy for the logistic regression model is 0.875. The error is 0.126
 
 Random Forest
 
@@ -127,6 +137,7 @@ set.seed(5)
 
 winner_rforest <- randomForest(myform,data = train_final, ntree = 400, mtry = 4)
 # we created a random forest model that has 400 trees and randomly selects out of 4 variables at each split
+winner_rforest
 
 train_rforest <- train_final %>% mutate(probs = predict(winner_rforest, type = "prob")[,2],prediction = predict(winner_rforest, type = "response"))
 
