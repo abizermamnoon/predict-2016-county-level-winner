@@ -82,7 +82,7 @@ and recall for the model. Then, we created a double density curve
        accuracy precision    recall
     1 0.8750502 0.8725166 0.9985789
 
-![](Abizer_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
+![](LAProject2_files/figure-gfm/unnamed-chunk-5-1.png)<!-- -->
 
 The double density curve indicates that most Republicans have an
 estimated probability of winning around 90%. Probability of Democrats
@@ -97,7 +97,7 @@ Here, we created a ROC curve for the training data
     This warning is displayed once every 8 hours.
     Call `lifecycle::last_lifecycle_warnings()` to see where this warning was generated.
 
-![](Abizer_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
+![](LAProject2_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
 
 The ROC curve suggests that our model is very good because it is close
 to a right angled triangle and has a higher sensitivity than a random
@@ -127,13 +127,6 @@ training data predictions.
 
 Our accuracy was 0.91 and error was 0.09.
 
-Finally, we then used the k nearest neighbours model with k = 50 and
-called it winner_knn. We also checked the accuracy with higher/lower k
-and we noticed that k=50 is optimal. We then computed the accuracy,
-precision, recall and error for the model of train_knn.
-
-We got an accuracy of 0.873 and an error of 0.127.
-
-After running the three models, it was clear that the random forest
-model gave us the highest accuracy of 0.91 and lowest error of 0.09 so
-we went ahead with that model for our predictions.
+After running the two models, it was clear that the random forest model
+gave us the highest accuracy of 0.91 and lowest error of 0.09 so we went
+ahead with that model for our predictions.

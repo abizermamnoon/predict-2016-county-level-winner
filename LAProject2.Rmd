@@ -144,36 +144,7 @@ train_rforest %>% summarize(accuracy = mean(winner == prediction), precision = s
 
 Our accuracy was 0.91 and error was 0.09. 
 
-Finally, we then used the k nearest neighbours model with k = 50 and called it winner_knn. We also checked the accuracy with higher/lower k and we noticed that k=50 is optimal. We then computed the accuracy, precision, recall and error for the model of train_knn. 
-
-```{r eval = FALSE, include= FALSE}
-set.seed(7)
-n <- nrow(train_final)
-
-xvars <- str_c(names(train_final)[1:8], collapse=",")
-
-train_index <- sample(1:n, size=round(.8*n)) # 80% train and 20% test
-
-trainX <- train_final %>% slice(train_index) %>% select(-winner) # created a new dataframe on which we train our model
-
-testX <- test_final %>% slice(-train_index) # we test our model on this dataframe
-
-dim(trainX) # dimensions of the trainX dataframe
-dim(testX) # dimensions of the testX dataframe
-
-winner_knn <- knn(trainX,testX,cl = train_final$winner[train_index],k=10) # created a k-nearest neighbor model with k = 10
-
-winner_knn.cv <- knn.cv(train_final[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop")],cl = train_final$winner,k=50) # here we do cross validation and majority wins 
-
-train_knn <- data_frame(y = train_final$winner, prediction = winner_knn.cv) # dataframe of predictions from the cross validation model
-
-train_knn %>% summarize(accuracy = mean(y == prediction), precision = sum(y == "Republican" & prediction == "Republican")/sum(prediction == "Republican"),recall = sum(y == "Republican" & prediction == "Republican")/sum(y == "Republican"), error = 1 - accuracy) # computed the accuracy, precision, recall and error of k-nearest neighbors model by comparing the predictions with the actual 
-```
-
-We got an accuracy of 0.873 and an error of 0.127. 
-
-
-After running the three models, it was clear that the random forest model gave us the highest accuracy of 0.91 and lowest error of 0.09 so we went ahead with that model for our predictions.
+After running the two models, it was clear that the random forest model gave us the highest accuracy of 0.91 and lowest error of 0.09 so we went ahead with that model for our predictions.
 
 
 ```{r}
