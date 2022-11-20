@@ -53,6 +53,7 @@ myform_initial <- as.formula(str_c("winner ~ ", xvars_initial))
 initial_winner.glm <- glm(myform_initial, data = train_winner, family = binomial)
 # we created a model based on the train dataset
 
+
 summary(initial_winner.glm)
 
 train_rename <- train_winner %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","POP715213"="Percent_living_in_same_house_multiple_years","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
