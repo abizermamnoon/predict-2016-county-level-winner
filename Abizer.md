@@ -142,24 +142,24 @@ The error is 0.119
 
 Random Forest
 
-We then created a random forest model called winner_rforest with 400
-trees that randomly select out of 4 variables at each split. To choose
+We then created a random forest model called winner_rforest with 350
+trees that randomly select out of 5 variables at each split. To choose
 the number of bootstrapped trees and the number of predictors to
-randomly select, we tried numbers around 400 and 4 respectively. We
+randomly select, we tried numbers around 350 and 5 respectively. We
 noticed that the accuracy goes down if we input more/less predictors or
-more/less trees hence we decided to stick with 400 trees and 4
+more/less trees hence we decided to stick with 350 trees and 5
 predictors to randomly select. Then we fitted the model to the training
 data, and calculated the accuracy, precision, recall and error for the
 training data predictions.
 
                 
                  Democrat Republican
-      Democrat        222        156
-      Republican       65       2046
-       accuracy precision    recall      error
-    1 0.9112093 0.9291553 0.9692089 0.08879068
+      Democrat        225        153
+      Republican       61       2050
+       accuracy precision    recall     error
+    1 0.9140217 0.9305493 0.9711037 0.0859783
        accuracy precision    recall
-    1 0.9112093 0.7735192 0.5873016
+    1 0.9140217 0.7867133 0.5952381
 
 Our accuracy was 0.91 and error was 0.09.
 
