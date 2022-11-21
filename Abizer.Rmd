@@ -39,23 +39,24 @@ train_winner <- train %>% mutate(winner = recode_factor(winner16, Dem = "Democra
 head(train_winner$winner)
 ```
 
-The fun part was deciding the variables we wanted to use in order to create our model. We ran a regression analysis with the 51 predictor variables and deciphered that 17 of them were significant. However, we wanted to avoid overfitting hence we ran a regression analysis with these 17 variables against the winner variable and chose only those variables that had a significance level less than 0.0001. We were also concerned that some of these variables might be correlated to each other which might be affecting their significance level. To examine this, we ran a individual regression analysis for each variable against the winner variable and chose the ones that were still significant. After doing this procedure, we concluded that retail sales, income/capita, median house value, percentage of population living in multi unit housing, languages other English spoken at home, percentage of population who have completed undergraduate degree or higher, percentage of population living in same housing for multiple years and percentage change in population are significant. 
+The fun part was deciding the variables we wanted to use in order to create our model. We ran a regression analysis with the 51 predictor variables and deciphered that 17 of them were significant. However, we wanted to avoid overfitting hence we ran a regression analysis with these 17 variables against the winner variable and chose only those variables that were significant. We were also concerned that some of these variables might be correlated to each other which might be affecting their significance level. To examine this, we ran a individual regression analysis for each variable against the winner variable and chose the ones that were still significant. After doing this procedure, we concluded that retail sales, income/capita, median house value, percentage of population living in multi unit housing, languages other English spoken at home, percentage of population who have completed undergraduate degree or higher, percentage of population living in same housing for multiple years and percentage change in population, Persons/Household, Land Area, Non-Employer Establishments, Hispanic Owned Firms, Accommodation/Food Sales and Building Permits are significant.
+
 
 ```{r}
 library(plyr)
 
-train_rename <- train_winner %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","POP715213"="Percent_living_in_same_house_multiple_years","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop"))
+train_rename <- train_winner %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","POP715213"="Percent_living_in_same_house_multiple_years","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop","HSD310213"="Persons_per_Household","LND110210"="Land_Area","NES010213"= "Nonemployer_establishments","SBO415207"="Hispanic_firms","AFN120207"="Accomodation_Food_Sales", "BPS030214"="Building_Permits"))
 # Here we renamed the variables that we were going to use in the train dataset and saved the data frame as train1
-test_rename <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","POP715213"="Percent_living_in_same_house_multiple_years","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop")) 
+test_rename <- test %>% plyr::rename(c("RTN130207"="Retail_Sales_07","INC910213"="Income_per_capita","HSG096213"="Percent_multi_unit_housing","HSG495213"="Median_house_value","POP815213"="Spoken_non_english_lang","EDU635213"="Percent_Highschool_grad","POP715213"="Percent_living_in_same_house_multiple_years","EDU685213"="Percent_Undergrad","AGE295214"="percent_under_18","AGE775214"="percent_over_65","PST120214"="percent_change_in_pop","HSD310213"="Persons_per_Household","LND110210"="Land_Area","NES010213"= "Nonemployer_establishments","SBO415207"="Hispanic_firms", "AFN120207"="Accomodation_Food_Sales","BPS030214"="Building_Permits")) 
 # here we renamed the variables we were going to use in the test dataset and saved the object as test1
 
-train_final <- train_rename %>% select(Retail_Sales_07, Income_per_capita, Median_house_value,Percent_multi_unit_housing, Spoken_non_english_lang, Percent_Undergrad,  Percent_living_in_same_house_multiple_years, percent_change_in_pop, winner)
+train_final <- train_rename %>% select(Retail_Sales_07, Income_per_capita, Median_house_value,Percent_multi_unit_housing, Spoken_non_english_lang, Percent_Undergrad,  Percent_living_in_same_house_multiple_years, percent_change_in_pop, Persons_per_Household,Land_Area, Nonemployer_establishments, Hispanic_firms, Accomodation_Food_Sales, Building_Permits, winner)
 # here we create a new dataframe called Train1 that has te variables that we want
 
-test_final <- test_rename %>% select(Retail_Sales_07, Income_per_capita, Median_house_value, Spoken_non_english_lang, Percent_multi_unit_housing,Percent_living_in_same_house_multiple_years, Percent_Undergrad, percent_change_in_pop)
+test_final <- test_rename %>% select(Retail_Sales_07, Income_per_capita, Median_house_value, Spoken_non_english_lang, Percent_multi_unit_housing,Percent_living_in_same_house_multiple_years, Percent_Undergrad, percent_change_in_pop, Persons_per_Household,Land_Area,Nonemployer_establishments, Hispanic_firms, Accomodation_Food_Sales, Building_Permits)
 # here we create a new dataframe called Test1 that has the variables that we want
 
-xvars <- str_c(names(train_final)[1:8], collapse="+")
+xvars <- str_c(names(train_final)[1:14], collapse="+")
 myform <- as.formula(str_c("winner ~ ", xvars))
 #x-variables are the names of the first 8 columns in the Train1 dataset
 
@@ -75,8 +76,13 @@ train_final <- train_final %>% mutate(probs = predict(winner.glm, type = "respon
 test_final <- test_final %>% mutate(probs = predict(winner.glm, newdata = test_final, type = "response"),prediction = ifelse(probs >= 0.05,"Republican","Democrat"))
 # here we created a new dataframe test in which we fitted the model winner.glm to the testing data and included the probabilities and predictions
 
+conf.mat <- table(train_final$winner,train_final$prediction)
+conf.mat
+
 train_final %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"))
 # here we calculated the accuracy, precision and recall by comparing our predictions to the actual winners
+
+train_final %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Democrat" & prediction == "Democrat")/sum(prediction == "Democrat"), recall = sum(winner == "Democrat" & prediction == "Democrat")/sum(winner == "Democrat"))
 
 ggplot(train_final,aes(x = probs, color = winner)) + geom_density(size = 1.5) + ggtitle("Forecasted Winner Probabilities ")
 
@@ -85,7 +91,7 @@ ggplot(train_final,aes(x = probs, color = winner)) + geom_density(size = 1.5) + 
 
 The double density curve indicates that most Republicans have an estimated probability of winning around 90%. Probability of Democrats winning is not defined so well but range lower than a Republican
 
-The accuracy for the logistic regression model is 0.875
+The accuracy for the logistic regression model is 0.883
 
 Here, we created a ROC curve for the training data
 ```{r}
@@ -115,7 +121,7 @@ train_error$delta[1]
 # here we used a 5-fold cross validation to calculate the error for logistic regression model
 ```
 
-The error is 0.126
+The error is 0.119
 
 Random Forest
 
@@ -132,11 +138,15 @@ train_rforest <- train_final %>% mutate(probs = predict(winner_rforest, type = "
 
 # we created a new data frame called train3 in which we fitted the random forest model that we created to the training dataset and computed the predictions 
 
-test_reforest <- test_final %>% mutate(prediction = predict(winner_rforest,type = "response",newdata = test_final))
+table(train_rforest$winner,train_rforest$prediction)
+
+test_rforest <- test_final %>% mutate(prediction = predict(winner_rforest,type = "response",newdata = test_final))
 
 # we created a new data frame called test3 in which we fitted the random forest model that we created to the testing dataset and computed the predictions 
 
 train_rforest %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Republican" & prediction == "Republican")/sum(prediction == "Republican"), recall = sum(winner == "Republican" & prediction == "Republican")/sum(winner == "Republican"), error = 1 - accuracy)
+
+train_rforest %>% summarize(accuracy = mean(winner == prediction), precision = sum(winner == "Democrat" & prediction == "Democrat")/sum(prediction == "Democrat"), recall = sum(winner == "Democrat" & prediction == "Democrat")/sum(winner == "Democrat"))
 
 # here we computed the accuracy, precision, recall and error of our random forest model by comparing the predictions to the actual winners
 
@@ -152,7 +162,7 @@ train_final_factor <- train_final %>% mutate(winner_factor = recode_factor(winne
 set.seed(7)
 n <- nrow(train_final)
 
-xvars <- str_c(names(train_final)[1:8], collapse=",")
+xvars <- str_c(names(train_final)[1:14], collapse=",")
 
 train_index <- sample(1:n, size=round(.8*n)) # 80% train and 20% test
 
@@ -165,7 +175,7 @@ dim(testX) # dimensions of the testX dataframe
 
 winner_knn <- knn(trainX,testX,cl = train_final_factor$winner_factor[train_index],k=10) # created a k-nearest neighbor model with k = 10
 
-winner_knn.cv <- knn.cv(train_final[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop")],cl = train_final_factor$winner_factor,k=50) # here we do cross validation and majority wins 
+winner_knn.cv <- knn.cv(train_final[,c("Retail_Sales_07", "Income_per_capita", "Median_house_value","Percent_multi_unit_housing", "Spoken_non_english_lang", "Percent_Undergrad",  "Percent_living_in_same_house_multiple_years", "percent_change_in_pop","Persons_per_Household","Land_Area", "Nonemployer_establishments", "Hispanic_firms", "Accomodation_Food_Sales", "Building_Permits")],cl = train_final_factor$winner_factor,k=50) # here we do cross validation and majority wins 
 
 train_knn <- data_frame(y = train_final$winner, prediction = winner_knn.cv) # dataframe of predictions from the cross validation model
 
