@@ -19,22 +19,19 @@ For example, some of the winner variable values are shown below
 
 The fun part was deciding the variables we wanted to use in order to
 create our model. We ran a regression analysis with the 51 predictor
-variables and deciphered that 17 of them were significant. However, we
-wanted to avoid overfitting hence we ran a regression analysis with
-these 17 variables against the winner variable and chose only those
-variables that were significant. We were also concerned that some of
-these variables might be correlated to each other which might be
-affecting their significance level. To examine this, we ran a individual
-regression analysis for each variable against the winner variable and
-chose the ones that were still significant. After doing this procedure,
-we concluded that retail sales, income/capita, median house value,
-percentage of population living in multi unit housing, languages other
-English spoken at home, percentage of population who have completed
-undergraduate degree or higher, percentage of population living in same
-housing for multiple years and percentage change in population,
-Persons/Household, Land Area, Non-Employer Establishments, Hispanic
-Owned Firms, Accommodation/Food Sales and Building Permits are
-significant.
+variables and deciphered that 17 of them were significant. We were also
+concerned that some of these variables might be correlated to each other
+which might be affecting their significance level. To examine this, we
+ran a individual regression analysis for each variable against the
+winner variable and chose the ones that were still significant. After
+doing this procedure, we concluded that retail sales, income/capita,
+median house value, percentage of population living in multi unit
+housing, languages other English spoken at home, percentage of
+population who have completed undergraduate degree or higher, percentage
+of population living in same housing for multiple years and percentage
+change in population, Persons/Household, Land Area, Non-Employer
+Establishments, Hispanic Owned Firms, Accommodation/Food Sales and
+Building Permits are significant.
 
     Warning: glm.fit: fitted probabilities numerically 0 or 1 occurred
 
